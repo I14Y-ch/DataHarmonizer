@@ -1,0 +1,16 @@
+betrieb_id,gemeinde,kanton,rasse,anzahl_tiere,milchleistung_kg,laktationstage,geburtsdatum,ohrmarke_nr,stalltyp
+BE001,Münsingen,BE,Holstein,42,8200,305,2021-03-14,CH123456789,Laufstall
+BE002,Thun,BE,Braunvieh,18,7100,298,2020-07-22,CH987654321,Anbindestall
+BE003,Burgdorf,BE,Simmental,31,6800,310,2022-01-08,CH456789123,Laufstall
+BE004,Langnau,BE,Holstein,55,8750,305,2021-11-30,CH321654987,Laufstall
+BE005,Interlaken,BE,Jersey,12,5900,290,2023-04-17,CH654321789,Anbindestall
+BE006,Biel,BE,Braunvieh,27,7350,302,2020-09-05,CH789123456,Laufstall
+BE007,Spiez,BE,Simmental,38,6950,308,2022-06-19,CH147258369,Anbindestall
+BE008,Köniz,BE,Holstein,61,8400,305,2021-02-28,CH369258147,Laufstall
+BE009,Steffisburg,BE,Braunvieh,22,7200,299,2023-08-11,CH258369147,Laufstall
+BE010,Muri bei Bern,BE,Simmental,45,7050,312,2020-12-03,CH963852741,Anbindestall
+BE011,Worb,BE,Holstein,33,8100,305,2022-10-25,CH741852963,Laufstall
+BE012,Belp,BE,Jersey,9,5750,288,2023-02-14,CH852963741,Laufstall
+BE013,Lyss,BE,Braunvieh,29,7450,301,2021-05-07,CH159357486,Laufstall
+BE014,Aarberg,BE,Holstein,48,8300,305,2020-08-19,CH486357159,Laufstall
+BE015,Grosshöchstetten,BE,Simmental,36,6900,307,2022-03-22,CH357159486,Laufstall

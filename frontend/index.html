@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataHarmonizer ♥ I14Y Schema Matching</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="#e0426e"/>
+            <path d="M14 21s-7-5.5-7-10a4 4 0 018 0 4 4 0 018 0c0 4.5-7 10-7 10z" fill="white"/>
+          </svg>
+          <span class="brand-name">DataHarmonizer</span>
+        </div>
+        <button class="btn-icon" id="newChatBtn" title="New session">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-label">Uploaded files</p>
+        <div id="sidebarFiles" class="sidebar-files">
+          <p class="muted-hint">No files yet</p>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-label">Journey</p>
+        <ol class="journey-steps">
+          <li class="journey-step" id="step1" data-step="1">
+            <span class="step-num">1</span>
+            <span class="step-label">Dataset discovery</span>
+          </li>
+          <li class="journey-step" id="step2" data-step="2">
+            <span class="step-num">2</span>
+            <span class="step-label">Schema matching</span>
+          </li>
+          <li class="journey-step" id="step3" data-step="3">
+            <span class="step-num">3</span>
+            <span class="step-label">Export metadata</span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="sidebar-footer">
+        <span class="badge">I14Y + Valentine</span>
+      </div>
+    </aside>
+
+    <!-- ── Main ─────────────────────────────────────────────────────────── -->
+    <main class="main">
+      <div class="chat-scroll" id="chatScroll">
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages injected by JS -->
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-wrap">
+        <div class="input-box">
+          <!-- Attached file chips -->
+          <div class="chips" id="chips"></div>
+
+          <div class="input-row">
+            <label class="btn-attach" for="fileInput" title="Attach CSV or XML">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M15.5 8.5L8.5 15.5A4.5 4.5 0 012 9l7-7a3 3 0 014.24 4.24L6.5 13A1.5 1.5 0 014.38 10.88L10.5 4.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </label>
+            <input type="file" id="fileInput" multiple accept=".csv,.xml" style="display:none" />
+
+            <textarea
+              id="msgInput"
+              placeholder="Ask about your data… e.g. 'Do other cantonal business registries exist?'"
+              rows="1"
+            ></textarea>
+
+            <button class="btn-send" id="sendBtn" title="Send">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2 9h14M9.5 2.5L16 9l-6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p class="input-hint">Supports CSV and XML · Results via I14Y public API · <a href="https://www.i14y.admin.ch" target="_blank" rel="noopener">i14y.admin.ch</a></p>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

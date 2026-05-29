@@ -1,0 +1,23 @@
+# Data folder (synthetic/fake data — not for version control)
+#/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+.virtual_documents
+
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
