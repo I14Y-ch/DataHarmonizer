@@ -1,5 +1,8 @@
 services:
   app:
+    # In CI/CD the pre-built image from GHCR is used.
+    # For local dev you can override with: docker compose up --build
+    image: ${APP_IMAGE:-ghcr.io/i14y-ch/dataharmonizer:latest}
     build: .
     container_name: dataharmonizer_app
     restart: unless-stopped

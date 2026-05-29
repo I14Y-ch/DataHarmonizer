@@ -1,0 +1,135 @@
+name: Deploy to Infomaniak VPS
+
+on:
+  push:
+    branches:
+      - Infomaniak-VPS  # auto-deploy on every push to this branch
+  workflow_dispatch:    # allow manual trigger from GitHub UI
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Lint & basic sanity checks
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Check syntax (py compile)
+        run: python -m compileall backend/
+
+      - name: Validate docker-compose
+        run: docker compose config --quiet
+
+  # ─────────────────────────────────────────────
+  # 2. Build & push Docker image to GHCR
+  # ─────────────────────────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/i14y-ch/dataharmonizer
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest,enable=true
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # 3. Deploy on VPS via SSH
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://govtech.watts-drive.ch
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            REMOTE_DIR="/home/ubuntu/dataharmonizer"
+
+            # ── Clone or update repo ──
+            if [ -d "$REMOTE_DIR/.git" ]; then
+              cd "$REMOTE_DIR"
+              git fetch origin
+              git checkout Infomaniak-VPS
+              git pull origin Infomaniak-VPS
+            else
+              git clone --branch Infomaniak-VPS \
+                https://github.com/I14Y-ch/DataHarmonizer.git "$REMOTE_DIR"
+              cd "$REMOTE_DIR"
+            fi
+
+            cd "$REMOTE_DIR"
+
+            # ── Guard: .env must exist ──
+            if [ ! -f ".env" ]; then
+              echo "ERROR: .env missing – create it from .env.production.example"
+              exit 1
+            fi
+
+            # ── Log in to GHCR (public repo → no auth needed, but good practice) ──
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
+
+            # ── Pull new image and restart ──
+            docker compose pull app
+            docker compose up -d --remove-orphans
+
+            # ── Clean up old images ──
+            docker image prune -f
+
+            echo "Deployment complete – $(date -u)"
