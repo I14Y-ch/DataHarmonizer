@@ -14,12 +14,18 @@ The backend searches the **I14Y public API** and returns the **3 most relevant d
 > **Sample question 1 — Population statistics**  
 > Upload `test_data/test_bevoelkerungsbilanz_bl.csv` and ask:  
 > *"Ich habe Gemeindestatistiken mit Geburten, Todesfällen und Wanderungsbewegungen. Gibt es auf I14Y vergleichbare kantonale Bevölkerungsdaten?"*  
-> → Matches dataset **Bilanz der Wohnbevölkerung nach Gemeinde und Jahr** (BL, UUID `3a6c3b89`)
+> → Matches dataset **Bilanz der Wohnbevölkerung nach Gemeinde und Jahr** 
 
 > **Sample question 2 — CO₂ emissions**  
 > Upload `test_data/test_co2_personenwagen.csv` and ask:  
 > *"Wir erfassen CO2-Werte und Leergewichte von neuzugelassenen Personenwagen. Welche Bundesdaten auf I14Y decken Emissionsvorschriften für Fahrzeuge ab?"*  
-> → Matches dataset **Vollzugsresultate der CO2-Emissionsvorschriften für Personenwagen** (UUID `19748db3`)
+> → Matches dataset **Vollzugsresultate der CO2-Emissionsvorschriften für Personenwagen** (UUID `19748db3-8bfb-48ad-8206-8fbde648afb7`)
+
+> **Sample question 3 — School statistics by sex**  
+> Upload `test_data/test_lernende_bl.csv` and ask:  
+> *"Wir erfassen Schülerzahlen nach Schulstufe und Geschlecht im Kanton Basel-Landschaft. Gibt es auf I14Y vergleichbare Daten?"*  
+> → Matches dataset **Lernende an Baselbieter Schulen nach Schulstufe und Geschlecht** (UUID `6d07cca7-f55a-4971-a713-0f0d4e4ea7f3`)  
+> Expected mapping: `sex` → `geschlecht`, `sex_code` → `geschlecht_code`, `jahr` → `jahr` (exact), `schulstufe` → `schulstufe_grob`, `anzahl_lernende` → `wert`
 
 ### Step 2 — Schema Matching
 Click **Compare schemas** on any search result.  
