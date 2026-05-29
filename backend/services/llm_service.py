@@ -17,7 +17,13 @@ def _get_client() -> OpenAI:
             raise RuntimeError(
                 "OPENAI_API_KEY not set. Create poc/backend/.env with OPENAI_API_KEY=sk-..."
             )
-        _client = OpenAI(api_key=api_key)
+        
+        # Support custom LLM providers via BASE_URL environment variable
+        base_url = os.environ.get("BASE_URL")
+        if base_url:
+            _client = OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            _client = OpenAI(api_key=api_key)
     return _client
 
 
@@ -29,6 +35,8 @@ def search_with_mcp(question: str, uploaded_columns: list[str]) -> dict:
     """
     Use the OpenAI Responses API with the I14Y remote MCP server to discover,
     search, and summarise relevant datasets in a single LLM call.
+
+    Supports custom LLM providers via BASE_URL environment variable.
 
     Returns:
         {
