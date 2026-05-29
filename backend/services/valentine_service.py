@@ -5,12 +5,35 @@ import math
 
 import pandas as pd
 from valentine import valentine_match
-from valentine.algorithms import JaccardDistanceMatcher
+from valentine.algorithms import Coma
 
 from .i14y_service import lookup_concepts_batch
 
 EXACT_THRESHOLD = 0.85
 CLOSE_THRESHOLD = 0.50
+
+# Cross-language / domain synonym pairs — boost score to CLOSE_THRESHOLD minimum
+# when source and target column names are known equivalents.
+_SYNONYMS: list[tuple[set[str], set[str]]] = [
+    ({"sex", "gender", "sexe", "sesso"}, {"geschlecht", "sex", "gender", "sexe"}),
+    ({"age", "alter", "âge", "eta"}, {"alter", "age", "âge"}),
+    ({"year", "annee", "année", "anno"}, {"jahr", "year", "annee"}),
+    ({"municipality", "commune", "gemeinde", "comune"}, {"gemeinde", "municipality", "commune"}),
+    ({"count", "anzahl", "nombre", "numero", "total", "wert", "value"}, {"anzahl", "wert", "count", "nombre", "total"}),
+    ({"canton", "kanton"}, {"kanton", "canton"}),
+    ({"population", "bevoelkerung", "bevölkerung"}, {"bevoelkerung", "bevölkerung", "population"}),
+]
+
+
+def _synonym_boost(src: str, tgt: str, base_score: float) -> float:
+    """Return a boosted score if src/tgt are known cross-language synonyms."""
+    s, t = src.lower(), tgt.lower()
+    for src_set, tgt_set in _SYNONYMS:
+        if s in src_set and t in tgt_set:
+            return max(base_score, CLOSE_THRESHOLD + 0.05)
+        if t in src_set and s in tgt_set:
+            return max(base_score, CLOSE_THRESHOLD + 0.05)
+    return base_score
 
 
 def _safe_float(v) -> float:
@@ -48,7 +71,7 @@ def run_matching(
             [[None] * len(df_target.columns)], columns=df_target.columns
         )
 
-    matcher = JaccardDistanceMatcher()
+    matcher = Coma()
     matches = valentine_match(
         df_source, df_target, matcher, df1_name=source_name, df2_name=target_name
     )
@@ -95,10 +118,15 @@ def run_matching(
             if ca["conceptId"] == cb["conceptId"]:
                 return 1.0, f'concept_verified ({ca["title"]})'
             if ca["conceptType"] == cb["conceptType"]:
-                return min(s * 1.2, 1.0), f'type_boost ({ca["conceptType"]})'
-            return s * 0.5, f'type_conflict ({ca["conceptType"]} vs {cb["conceptType"]})'
+                s = min(s * 1.2, 1.0)
+                return _synonym_boost(row["source_col"], row["target_col"], s), f'type_boost ({ca["conceptType"]})'
+            s = s * 0.5
+            return _synonym_boost(row["source_col"], row["target_col"], s), f'type_conflict ({ca["conceptType"]} vs {cb["conceptType"]})'
 
-        return s, None
+        # No concept signal — still apply synonym boost on name alone
+        boosted = _synonym_boost(row["source_col"], row["target_col"], s)
+        signal = "synonym_match" if boosted > s else None
+        return boosted, signal
 
     df_all[["hybrid_score", "i14y_signal"]] = df_all.apply(
         lambda r: _hybrid(r.to_dict()), axis=1, result_type="expand"
