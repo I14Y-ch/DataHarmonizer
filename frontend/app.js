@@ -214,7 +214,7 @@ function appendSearchResults(results, query, intro) {
     return;
   }
 
-  const sourceFile = state.uploadedFiles.length ? state.uploadedFiles[0].filename : null;
+  const sourceFile = state.uploadedFiles.length ? state.uploadedFiles[state.uploadedFiles.length - 1].filename : null;
 
   const cardsHtml = results.map((ds, i) => {
     const i14yUrl = `https://www.i14y.admin.ch/de/catalog/datasets/${encodeURIComponent(ds.id || '')}`;

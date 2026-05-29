@@ -40,18 +40,37 @@ def search_with_mcp(question: str, uploaded_columns: list[str]) -> dict:
     Falls back to empty result on connectivity failure.
     """
     col_hint = (
-        f"The user has uploaded a dataset with these columns: {', '.join(uploaded_columns[:12])}. "
+        f"The user has uploaded a dataset with these columns: {', '.join(uploaded_columns[:12])}."
         if uploaded_columns
         else ""
     )
 
     prompt = (
-        f"{col_hint}"
-        f"Find the 3 most relevant datasets on I14Y for this question: \"{question}\". "
-        "Search the catalogue, then return a JSON object with:\n"
+        f"Context: {col_hint}\n"
+        f"User question: \"{question}\"\n\n"
+        "Task: Find the most relevant datasets on I14Y that match BOTH the user's question topic "
+        "AND the structure of the uploaded dataset (column names).\n\n"
+        "Search strategy — run ALL of the following searches:\n"
+        "1. Search using the core TOPIC keywords from the question (in German).\n"
+        "2. Search using SYNONYMS or alternative German terms for the same topic.\n"
+        "3. Search using 2-3 of the most distinctive COLUMN NAMES from the uploaded dataset "
+        "(translate them to German if needed).\n"
+        "4. Search using the geographic or organisational SCOPE if mentioned (e.g. Kanton, Bund, Gemeinde).\n\n"
+        "Inclusion rule — ONLY include a dataset if ALL of the following are true:\n"
+        "1. The dataset TITLE or DESCRIPTION explicitly covers the same subject as the question. "
+        "Read the title/description carefully before including it.\n"
+        "2. At least 2 of the uploaded column names (or close German equivalents) "
+        "are plausibly present in the dataset.\n"
+        "3. The geographic/organisational scope is compatible.\n\n"
+        "If a dataset's title/description is about a different subject (e.g. elections, voting, health, "
+        "transport — when the question is not about those), reject it even if it shares generic columns "
+        "like 'Gemeinde', 'Kanton', 'Jahr', or 'Geschlecht'.\n\n"
+        "Collect up to 8 candidates, apply the inclusion rule strictly, "
+        "then return the top 5 in order of relevance.\n\n"
+        "Return ONLY a JSON object:\n"
         '{"intro": "one sentence summary", '
         '"ranked": [{"id": "...", "title": "...", "description": "...", '
-        '"publisher": "...", "llm_reason": "why relevant in one sentence"}, ...]}'
+        '"publisher": "...", "llm_reason": "why title/description and columns match"}, ...]}'
     )
 
     resp = _get_client().responses.create(
@@ -82,7 +101,7 @@ def search_with_mcp(question: str, uploaded_columns: list[str]) -> dict:
         intro = data.get("intro", "")
         # Normalise: ensure each entry has the keys our frontend expects
         normalised = []
-        for ds in ranked[:3]:
+        for ds in ranked[:6]:
             normalised.append({
                 "id": ds.get("id", ""),
                 "title": ds.get("title", ""),
