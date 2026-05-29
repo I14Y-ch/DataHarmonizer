@@ -9,6 +9,9 @@ __pycache__/
 .venv/
 venv/
 
+# TLS certificates (generated on VPS, never committed)
+nginx/certs/
+
 # Jupyter
 .ipynb_checkpoints/
 .virtual_documents
