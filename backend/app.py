@@ -235,11 +235,10 @@ def search():
                             if not ds.get("publisher"):
                                 pub = full.get("publisher") or {}
                                 ds["publisher"] = _multilang(pub.get("name") if isinstance(pub.get("name"), dict) else pub, "de", "en", "fr")
-                            if not ds.get("themes"):
-                                ds["themes"] = [
-                                    _multilang(t, "de", "en", "fr") if isinstance(t, dict) else str(t)
-                                    for t in (full.get("themes") or [])[:3]
-                                ]
+                            ds["themes"] = [
+                                _multilang(t.get("name") or t, "en", "de", "fr", "it") if isinstance(t, dict) else str(t)
+                                for t in (full.get("themes") or ds.get("themes") or [])[:3]
+                            ]
                     ds.setdefault("has_download", False)
                     ds.setdefault("has_structure", False)
                     if ds.get("has_download") and ds.get("has_structure"):
@@ -327,7 +326,7 @@ def search():
                     "format": fmt,
                     "has_structure": ds_has_structure,
                     "themes": [
-                        _multilang(t, "de", "en", "fr") if isinstance(t, dict) else str(t)
+                        _multilang(t.get("name") or t, "en", "de", "fr", "it") if isinstance(t, dict) else str(t)
                         for t in (full.get("themes") or [])[:3]
                     ],
                     "llm_reason": llm_reason,

@@ -238,7 +238,10 @@ function appendSearchResults(results, query, intro) {
         ${ds.has_download ? `<span class="tag tag-dl">↓ downloadable</span>` : ''}
         ${ds.format ? `<span class="tag tag-fmt">${escHtml(ds.format)}</span>` : ''}
         ${ds.structure_url ? `<span class="tag">structure</span>` : ''}
-        ${(ds.themes || []).map(t => `<span class="tag">${escHtml(typeof t === 'string' ? t : JSON.stringify(t))}</span>`).join('')}
+        ${(ds.themes || []).map(t => {
+          const label = typeof t === 'string' ? t : (t.name?.en || t.name?.de || t.name?.fr || t.name?.it || t.code || JSON.stringify(t));
+          return `<span class="tag">${escHtml(label)}</span>`;
+        }).join('')}
       </div>
       ${!sourceFile ? `<p class="text-muted" style="font-size:12px; margin-top:4px">Upload a dataset to compare schemas.</p>` : ''}
     </div>`;
@@ -387,10 +390,11 @@ function appendExportBlock() {
       <div class="export-block">
         <div class="export-title">📦 Transformation export</div>
         <div class="export-desc">
-          Download a ZIP containing a <strong>mapping_table.csv</strong>
-          (compatible with I14Y upload format) and a
+          Download a ZIP containing three files: a <strong>mapping_table.csv</strong>
+          (compatible with I14Y upload format), a
           <strong>transformation_recipe.json</strong> with full field-level
-          transformation rules.
+          transformation rules, and an <strong>executive_summary.txt</strong>
+          with a plain-language overview of all proposed transformations.
         </div>
         <div class="export-files">
           <div class="export-file">
@@ -400,6 +404,10 @@ function appendExportBlock() {
           <div class="export-file">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
             transformation_recipe.json — full transformation plan
+          </div>
+          <div class="export-file">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            executive_summary.txt — plain-language transformation overview
           </div>
         </div>
         <button class="btn btn-success" id="exportBtn">⬇ Download transformation_export.zip</button>

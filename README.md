@@ -4,13 +4,22 @@ A proof-of-concept web app for **semantic dataset discovery + schema harmonisati
 
 ---
 
+
 ## User Journey
 
 ### Step 1 — Dataset Discovery
 Upload one or more datasets (CSV or XML) and ask a question.  
 The backend searches the **I14Y public API** and returns the **3 most relevant datasets** ranked by semantic relevance.
 
-> *Example: upload `businesses.csv` and ask "Do other cantonal business registries exist?" or "Is there a communal version of this dataset?"*
+> **Sample question 1 — Population statistics**  
+> Upload `test_data/test_bevoelkerungsbilanz_bl.csv` and ask:  
+> *"Ich habe Gemeindestatistiken mit Geburten, Todesfällen und Wanderungsbewegungen. Gibt es auf I14Y vergleichbare kantonale Bevölkerungsdaten?"*  
+> → Matches dataset **Bilanz der Wohnbevölkerung nach Gemeinde und Jahr** (BL, UUID `3a6c3b89`)
+
+> **Sample question 2 — CO₂ emissions**  
+> Upload `test_data/test_co2_personenwagen.csv` and ask:  
+> *"Wir erfassen CO2-Werte und Leergewichte von neuzugelassenen Personenwagen. Welche Bundesdaten auf I14Y decken Emissionsvorschriften für Fahrzeuge ab?"*  
+> → Matches dataset **Vollzugsresultate der CO2-Emissionsvorschriften für Personenwagen** (UUID `19748db3`)
 
 ### Step 2 — Schema Matching
 Click **Compare schemas** on any search result.  
