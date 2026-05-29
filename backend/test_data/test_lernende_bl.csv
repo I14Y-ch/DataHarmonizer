@@ -1,0 +1,21 @@
+jahr,sex,sex_code,schulstufe,schulstufe_code,anzahl_lernende,indikator
+1986,Männlich,1,Primarstufe,1,12453,Lernende
+1986,Weiblich,2,Primarstufe,1,11872,Lernende
+1986,Männlich,1,Sekundarstufe I,2,8134,Lernende
+1986,Weiblich,2,Sekundarstufe I,2,7901,Lernende
+1990,Männlich,1,Primarstufe,1,13201,Lernende
+1990,Weiblich,2,Primarstufe,1,12598,Lernende
+1990,Männlich,1,Sekundarstufe I,2,8765,Lernende
+1990,Weiblich,2,Sekundarstufe I,2,8432,Lernende
+2000,Männlich,1,Primarstufe,1,14102,Lernende
+2000,Weiblich,2,Primarstufe,1,13487,Lernende
+2000,Männlich,1,Sekundarstufe II,3,6234,Lernende
+2000,Weiblich,2,Sekundarstufe II,3,6891,Lernende
+2010,Männlich,1,Primarstufe,1,13876,Lernende
+2010,Weiblich,2,Primarstufe,1,13201,Lernende
+2010,Männlich,1,Tertiärstufe,4,4521,Lernende
+2010,Weiblich,2,Tertiärstufe,4,5103,Lernende
+2020,Männlich,1,Primarstufe,1,14532,Lernende
+2020,Weiblich,2,Primarstufe,1,13944,Lernende
+2020,Männlich,1,Sekundarstufe I,2,9012,Lernende
+2020,Weiblich,2,Sekundarstufe I,2,8876,Lernende

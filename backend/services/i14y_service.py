@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import re
 import time
 
 import pandas as pd
@@ -9,6 +10,9 @@ import requests
 
 I14Y_API = "https://api.i14y.admin.ch/api/public/v1"
 _TIMEOUT = 10
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE
+)
 
 
 def search_datasets(query: str, page_size: int = 5) -> list[dict]:
@@ -22,9 +26,40 @@ def search_datasets(query: str, page_size: int = 5) -> list[dict]:
     return resp.json().get("data", [])
 
 
+def _is_full_uuid(s: str) -> bool:
+    """Return True when s looks like a complete UUID (8-4-4-4-12 hex, 36 chars)."""
+    return bool(_UUID_RE.fullmatch(s))
+
+
+def resolve_dataset_id(dataset_id: str) -> str:
+    """
+    Resolve a possibly-truncated dataset ID to its full UUID.
+
+    MCP sometimes returns partial IDs like '19748db3' instead of the full
+    '19748db3-8bfb-48ad-8206-8fbde648afb7'. When a direct metadata fetch 404s
+    and the ID is not a full UUID, we search I14Y with the partial ID string
+    and return the UUID of the first result whose UUID starts with that prefix.
+    Falls back to the original ID if resolution fails.
+    """
+    if _is_full_uuid(dataset_id):
+        return dataset_id
+    # Try text search — find a dataset whose UUID starts with the partial ID
+    try:
+        hits = search_datasets(dataset_id, page_size=5)
+        for hit in hits:
+            hit_id = hit.get("id", "")
+            if hit_id.startswith(dataset_id):
+                return hit_id
+    except Exception:
+        pass
+    return dataset_id
+
+
 def get_dataset_metadata(dataset_id: str) -> dict:
-    """Retrieve full DCAT dataset metadata. Unwraps the {"data": {...}} envelope."""
-    resp = requests.get(f"{I14Y_API}/datasets/{dataset_id}", timeout=_TIMEOUT)
+    """Retrieve full DCAT dataset metadata. Unwraps the {"data": {...}} envelope.
+    Automatically resolves truncated/partial UUIDs to their full form."""
+    full_id = resolve_dataset_id(dataset_id)
+    resp = requests.get(f"{I14Y_API}/datasets/{full_id}", timeout=_TIMEOUT)
     resp.raise_for_status()
     body = resp.json()
     # The I14Y API wraps single-resource responses in {"data": {...}}
@@ -34,6 +69,7 @@ def get_dataset_metadata(dataset_id: str) -> dict:
 def has_structure(dataset_id: str) -> bool:
     """Return True when the dataset has a published SHACL shape with at least one PropertyShape."""
     try:
+        dataset_id = resolve_dataset_id(dataset_id)
         resp = requests.get(
             f"{I14Y_API}/datasets/{dataset_id}/structures/exports/JsonLd",
             timeout=_TIMEOUT,
@@ -56,6 +92,7 @@ def get_dataset_structure(dataset_id: str) -> list[dict]:
     The concept_id is taken from the authoritative dct:conformsTo field on the shape, which
     links each attribute to its I14Y concept. Returns an empty list when unavailable.
     """
+    dataset_id = resolve_dataset_id(dataset_id)
     try:
         resp = requests.get(
             f"{I14Y_API}/datasets/{dataset_id}/structures/exports/JsonLd",
@@ -67,23 +104,55 @@ def get_dataset_structure(dataset_id: str) -> list[dict]:
         # API returns either a top-level array or {"@graph": [...]}
         graph = body if isinstance(body, list) else body.get("@graph", [])
         columns: list[dict] = []
+        def _pick_label(item: dict) -> str:
+            """Extract a plain string label from a JSON-LD item, handling both
+            compact keys (sh:name, rdfs:label) and full URI keys."""
+            # Try compact keys first
+            for key in ("sh:name", "rdfs:label"):
+                v = item.get(key)
+                if v:
+                    if isinstance(v, dict):
+                        return v.get("de") or v.get("en") or v.get("fr") or str(v)
+                    if isinstance(v, list) and v:
+                        entry = v[0]
+                        return entry.get("@value", str(entry)) if isinstance(entry, dict) else str(entry)
+                    return str(v)
+            # Try full URI keys
+            for key in (
+                "http://www.w3.org/2000/01/rdf-schema#label",
+                "http://www.w3.org/ns/shacl#name",
+            ):
+                v = item.get(key)
+                if v:
+                    if isinstance(v, list) and v:
+                        entry = v[0]
+                        return entry.get("@value", str(entry)) if isinstance(entry, dict) else str(entry)
+                    return str(v)
+            # Fall back to path or @id
+            sh_path = item.get("http://www.w3.org/ns/shacl#path") or item.get("sh:path")
+            if sh_path:
+                if isinstance(sh_path, list) and sh_path:
+                    sh_path = sh_path[0]
+                if isinstance(sh_path, dict):
+                    return sh_path.get("@id", "").split("/")[-1]
+            return item.get("@id", "").split("/")[-1]
+
         for item in graph:
             item_type = str(item.get("@type", ""))
             if "PropertyShape" not in item_type:
                 continue
-            name = (
-                item.get("sh:name")
-                or item.get("rdfs:label")
-                or (item.get("sh:path") or {}).get("@id", "").split("/")[-1]
-                or item.get("@id", "").split("/")[-1]
-            )
+            name = _pick_label(item)
             if isinstance(name, dict):
                 name = name.get("de") or name.get("en") or name.get("fr") or str(name)
             if not name or not isinstance(name, str) or not name.strip():
                 continue
             # dct:conformsTo carries the authoritative link to the I14Y concept.
             concept_id: str | None = None
-            conforms_to = item.get("dct:conformsTo") or item.get("conformsTo")
+            conforms_to = (
+                item.get("dct:conformsTo")
+                or item.get("conformsTo")
+                or item.get("http://purl.org/dc/terms/conformsTo")
+            )
             if isinstance(conforms_to, dict):
                 raw_id = conforms_to.get("@id", "")
                 if "/concepts/" in raw_id:

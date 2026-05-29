@@ -192,13 +192,11 @@ def search():
                 mcp_datasets = mcp_result.get("ranked", [])
                 intro = mcp_result.get("intro", "")
 
-                # Always fetch full metadata to check structure_url + download_url.
-                # Tier 1: has both a downloadable distribution and a SHACL structure.
-                # Tier 2: has a SHACL structure only — matching still works via column names.
-                # Fill slots from tier 1 first, then tier 2 up to 3 total.
-                # Process ALL MCP candidates before trimming — don't break early.
-                tier2_mcp: list[dict] = []
-                for ds in mcp_datasets:
+                # Enrich each MCP candidate with metadata (download URL, structure info).
+                # Preserve the LLM's relevance order — do NOT reorder by tier.
+                # Tier info is used only to populate has_download/has_structure flags
+                # so the frontend can show/hide compare buttons appropriately.
+                for ds in mcp_datasets[:5]:
                     ds_id = ds.get("id")
                     if ds_id:
                         try:
@@ -218,6 +216,11 @@ def search():
                             except Exception:
                                 full = {}
                         if full:
+                            # Always use the canonical full UUID from the metadata response
+                            canonical_id = full.get("id") or ds_id
+                            if canonical_id != ds_id:
+                                ds["id"] = canonical_id
+                                ds_id = canonical_id
                             distros = full.get("distributions") or []
                             dl = next(((d.get("downloadUrl") or {}).get("uri") for d in distros if (d.get("downloadUrl") or {}).get("uri")), None)
                             fmt = next(
@@ -241,16 +244,8 @@ def search():
                             ]
                     ds.setdefault("has_download", False)
                     ds.setdefault("has_structure", False)
-                    if ds.get("has_download") and ds.get("has_structure"):
-                        enriched.append(ds)
-                    elif ds.get("has_structure"):
-                        tier2_mcp.append(ds)
-                # Fill remaining slots from tier2 (no early break — evaluate all first)
-                for ds in tier2_mcp:
-                    if len(enriched) >= 3:
-                        break
                     enriched.append(ds)
-                enriched = enriched[:3]
+                enriched = enriched[:5]
 
             except Exception:
                 pass  # fall through to REST fallback
@@ -301,6 +296,8 @@ def search():
                 except Exception:
                     full = raw_ds
 
+                # Always use the canonical full UUID from the metadata response
+                ds_id = full.get("id") or ds_id
                 distros: list[dict] = full.get("distributions") or []
                 download_url = next(
                     ((d.get("downloadUrl") or {}).get("uri") for d in distros if (d.get("downloadUrl") or {}).get("uri")), None
@@ -335,10 +332,14 @@ def search():
                     enriched.append(card)
                 elif ds_has_structure:
                     tier2_rest.append(card)
-            # Fill remaining slots from tier2, then trim
+                else:
+                    tier2_rest.append(card)  # tier 3: include even without structure
+            # Fill remaining slots from tier2/tier3, then trim
             for card in tier2_rest:
+                if len(enriched) >= 5:
+                    break
                 enriched.append(card)
-            enriched = enriched[:3]
+            enriched = enriched[:5]
 
         session["search_results"] = enriched
         return jsonify({"session_id": session_id, "results": enriched, "query": query, "intro": intro})
@@ -373,7 +374,7 @@ def compare():
         df_source = files[source_filename]
         src_name = source_filename
     elif files:
-        src_name = next(iter(files))
+        src_name = next(reversed(list(files)))
         df_source = files[src_name]
     else:
         return jsonify({"error": "No uploaded files in this session"}), 400
