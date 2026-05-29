@@ -30,7 +30,10 @@ jobs:
         run: python -m compileall backend/
 
       - name: Validate docker-compose
-        run: docker compose config --quiet
+        run: |
+          echo "OPENAI_API_KEY=dummy" > .env
+          docker compose config --quiet
+          rm .env
 
   # ─────────────────────────────────────────────
   # 2. Build & push Docker image to GHCR
